@@ -45,6 +45,21 @@ async function run() {
             res.send(result);
         });
 
+        // popular post 
+        app.get('/popular-post', async(req, res)=>{
+            const result = await postCollection.aggregate([
+                // add popularity field
+                {
+                    $addFields: {
+                        popularity: { $subtract: ["$upVote", "$downVote"] }
+                    }
+                },
+                { $sort: { popularity: -1 } } // Sorting
+            ]).toArray();
+            res.send(result);
+
+        })
+
         // // Upvote a post
         // app.patch('/post/:id/upvote', async (req, res) => {
         //     const { id } = req.params;
