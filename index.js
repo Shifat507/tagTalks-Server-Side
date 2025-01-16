@@ -25,14 +25,40 @@ const client = new MongoClient(uri, {
 async function run() {
     const postCollection = client.db("tagTalksDb").collection("posts");
     const userCollection = client.db("tagTalksDb").collection("users");
+    const commentCollection = client.db("tagTalksDb").collection("comments");
 
     try {
         // Routes
 
         // Get all posts
+        // app.get('/post', async (req, res) => {
+        //     const result = await postCollection.find().sort({ createdAt: -1 }).toArray();
+        //     res.send(result);
+        // });
+
+        // Get posts with comment count
         app.get('/post', async (req, res) => {
-            const result = await postCollection.find().sort({ createdAt: -1 }).toArray();
-            res.send(result);
+            
+                // Fetch all posts and add the comment count
+                const result = await postCollection.aggregate([
+                    {
+                        $lookup: {
+                            from: 'comments', // The comments collection
+                            localField: '_id', // Reference to the post _id
+                            foreignField: 'postId', // Field in the comments collection that refers to the post
+                            as: 'comments', // Resulting array of comments
+                        },
+                    },
+                    {
+                        $addFields: {
+                            commentCount: { $size: '$comments' }, // Add the comment count field
+                        },
+                    },
+                    { $sort: { createdAt: -1 } }, // Sort by creation date
+                ]).toArray();
+
+                res.send(result);
+            
         });
 
         // Create a new post
@@ -46,7 +72,7 @@ async function run() {
         });
 
         // popular post 
-        app.get('/popular-post', async(req, res)=>{
+        app.get('/popular-post', async (req, res) => {
             const result = await postCollection.aggregate([
                 // add popularity field
                 {
@@ -58,6 +84,17 @@ async function run() {
             ]).toArray();
             res.send(result);
 
+        })
+
+        // comments related APIs
+        app.post('/comments', async (req, res) => {
+            const commentInfo = req.body;
+            const result = await commentCollection.insertOne(commentInfo);
+            res.send(result);
+        })
+        app.get('/comments', async (req, res) => {
+            const result = await commentCollection.find().toArray();
+            res.send(result);
         })
 
         // // Upvote a post
