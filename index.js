@@ -32,16 +32,14 @@ async function run() {
 
         // Get all posts
         app.get('/post', async (req, res) => {
-            const result = await postCollection.find().sort({ createdAt: -1 }).toArray();
+            const page = parseInt(req.query.page) || 0;
+            const size = parseInt(req.query.size) || 5;
+            const result = await postCollection.find()
+                .skip(page * size)
+                .limit(size)
+                .sort({ createdAt: -1 }).toArray();
             res.send(result);
         });
-        // count posts 
-        app.get('/postsCount', async(req, res)=>{
-            const count = postCollection.estimatedDocumentCount();
-            res.send(count);    
-        })
-
-
 
         // Create a new post
         app.post('/post', async (req, res) => {
@@ -52,6 +50,19 @@ async function run() {
             const result = await postCollection.insertOne(postData);
             res.send(result);
         });
+
+        // Database Total posts 
+        app.get('/postsCount', async (req, res) => {
+            const count = await postCollection.estimatedDocumentCount();
+            res.send({ count });
+        })
+
+        // count individual user's post
+        app.get('/post/user/count/:email', async (req, res) => {
+            const { email } = req.params;
+            const count = await postCollection.countDocuments({ email });
+            res.send({ count });
+        })
 
         // popular post 
         app.get('/popular-post', async (req, res) => {
@@ -68,7 +79,7 @@ async function run() {
 
         })
 
-        // comments related APIs
+        // ----------comments related APIs-------------------->
         // post comment
         app.post('/comments', async (req, res) => {
             const commentInfo = req.body;
@@ -88,40 +99,9 @@ async function run() {
 
             const count = await commentCollection.countDocuments({ postId });
             res.send({ commentCount: count });
-
         });
 
-        
 
-        // // Upvote a post
-        // app.patch('/post/:id/upvote', async (req, res) => {
-        //     const { id } = req.params;
-        //     try {
-        //         const result = await postCollection.updateOne(
-        //             { _id: new ObjectId(id) },
-        //             { $inc: { upVote: 1 } }
-        //         );
-        //         res.send(result);
-        //     } catch (error) {
-        //         console.error('Error updating upvote:', error);
-        //         res.status(500).send({ error: 'Failed to upvote post' });
-        //     }
-        // });
-
-        // // Downvote a post
-        // app.patch('/post/:id/downvote', async (req, res) => {
-        //     const { id } = req.params;
-        //     try {
-        //         const result = await postCollection.updateOne(
-        //             { _id: new ObjectId(id) },
-        //             { $inc: { downVote: 1 } }
-        //         );
-        //         res.send(result);
-        //     } catch (error) {
-        //         console.error('Error updating downvote:', error);
-        //         res.status(500).send({ error: 'Failed to downvote post' });
-        //     }
-        // });
 
 
         // Upvote a post
@@ -212,6 +192,15 @@ async function run() {
             const result = await userCollection.insertOne(userInfo);
             res.send(result);
         })
+        app.get('/user/:email', async(req, res)=>{
+            const email = req.params.email;
+            const query = { email : email}
+            const result = await userCollection.find(query).toArray();
+            res.send(result)
+        })
+
+        
+
 
         // MongoDB connection check
         await client.db("admin").command({ ping: 1 });
