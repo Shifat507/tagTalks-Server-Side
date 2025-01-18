@@ -35,6 +35,11 @@ async function run() {
             const result = await postCollection.find().sort({ createdAt: -1 }).toArray();
             res.send(result);
         });
+        // count posts 
+        app.get('/postsCount', async(req, res)=>{
+            const count = postCollection.estimatedDocumentCount();
+            res.send(count);    
+        })
 
 
 
@@ -85,6 +90,8 @@ async function run() {
             res.send({ commentCount: count });
 
         });
+
+        
 
         // // Upvote a post
         // app.patch('/post/:id/upvote', async (req, res) => {
