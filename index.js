@@ -59,6 +59,13 @@ async function run() {
             res.send({ count });
         })
 
+        app.get('/post/:email', async(req, res)=>{
+            const email = req.params.email;
+            const query = {email : email};
+            const result = await postCollection.find(query).limit(3).toArray()
+            res.send(result);
+        })
+
         // count individual user's post
         app.get('/post/user/count/:email', async (req, res) => {
             const { email } = req.params;
