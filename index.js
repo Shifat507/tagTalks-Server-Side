@@ -66,6 +66,22 @@ async function run() {
             res.send(result);
         })
 
+        // get a specific user's all posts
+        app.get('/posts/user/:email', async(req, res)=>{
+            const email = req.params.email;
+            const query = {email : email};
+            const result = await postCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //delete a post
+        app.delete('/post/:id', async(req, res)=>{
+            const id = req.params.id;
+            const query = {_id : new ObjectId(id)};
+            const result = await postCollection.deleteOne(query);
+            res.send(result);
+        })
+
         // count individual user's post
         app.get('/post/user/count/:email', async (req, res) => {
             const { email } = req.params;
