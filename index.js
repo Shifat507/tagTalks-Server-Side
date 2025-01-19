@@ -27,6 +27,7 @@ async function run() {
     const postCollection = client.db("tagTalksDb").collection("posts");
     const userCollection = client.db("tagTalksDb").collection("users");
     const commentCollection = client.db("tagTalksDb").collection("comments");
+    const paymentCollection = client.db("tagTalksDb").collection("payments");
 
     try {
         // Routes
@@ -202,7 +203,7 @@ async function run() {
 
 
         //Payment Intent
-        app.post('create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.body;
             const amount = parseInt(price * 100);
 
@@ -213,11 +214,42 @@ async function run() {
                 payment_method_types: ['card']
             });
 
+            console.log(amount);
+
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
         })
+        // Payment Data
+        app.post('/payment', async(req,res)=>{
+            const payment = req.body;
+            const result = await paymentCollection.insertOne(payment);
+            
+            res.send(result)
+        })
 
+        app.get('/payment/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+        
+            try {
+                const result = await paymentCollection.find(query).toArray();
+                const updateResult = await userCollection.updateOne(
+                    { email },
+                    { $set: { userBadge: 'Gold' } },
+                    { upsert: true }
+                );
+        
+                res.send({
+                    payments: result,
+                    badgeUpdate: updateResult
+                });
+            } catch (error) {
+                console.error('Error in /payment/:email:', error);
+                res.status(500).send({ error: 'Internal server error' });
+            }
+        });
+        
 
 
 
