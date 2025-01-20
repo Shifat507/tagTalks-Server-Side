@@ -43,6 +43,14 @@ async function run() {
             res.send(result);
         });
 
+        // get post by tags
+        app.get('/post/:tag', async(req, res)=>{
+            const tag = req.params.tag;
+            const query = {tag : tag};
+            const result = await postCollection.find(query).toArray();
+            res.send(result);
+        })
+
         // Create a new post
         app.post('/post', async (req, res) => {
             const postData = req.body;
@@ -52,6 +60,7 @@ async function run() {
             const result = await postCollection.insertOne(postData);
             res.send(result);
         });
+
 
         // Database Total posts 
         app.get('/postsCount', async (req, res) => {
