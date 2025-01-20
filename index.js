@@ -30,7 +30,46 @@ async function run() {
     const paymentCollection = client.db("tagTalksDb").collection("payments");
 
     try {
-        
+
+        //------------JWT related APIs------------
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '2hr' });
+
+            res.send({ token })
+        })
+
+        //middleware (FOR TOKEN VERIFICATION)----------->>>
+        const verifyToken = (req, res, next) => {
+            console.log('Inside verify token :', req.headers.authorization);
+            if (!req.headers.authorization) {
+                return res.status(401).send({ message: 'unauthorized access' });
+            }
+            const token = req.headers.authorization.split(' ')[1];
+            //verify the token
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode) => {
+                if (err) {
+                    return res.status(401).send({ message: 'unauthorized access' });
+                }
+                req.decode = decode;
+                next();
+            })
+
+        }
+
+        // middleware: verify admin 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decode.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            const isAdmin = user?.role === 'admin';
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            next()
+
+        }
+
 
         // Get all posts
         app.get('/post', async (req, res) => {
@@ -44,9 +83,9 @@ async function run() {
         });
 
         // get post by tags
-        app.get('/post/:tag', async(req, res)=>{
+        app.get('/post/:tag', async (req, res) => {
             const tag = req.params.tag;
-            const query = {tag : tag};
+            const query = { tag: tag };
             const result = await postCollection.find(query).toArray();
             res.send(result);
         })
@@ -68,25 +107,25 @@ async function run() {
             res.send({ count });
         })
 
-        app.get('/recentPost/:email', async(req, res)=>{
+        app.get('/recentPost/:email', async (req, res) => {
             const email = req.params.email;
-            const query = {email : email};
+            const query = { email: email };
             const result = await postCollection.find(query).limit(3).toArray()
             res.send(result);
         })
 
         // get a specific user's all posts
-        app.get('/posts/user/:email', async(req, res)=>{
+        app.get('/posts/user/:email', async (req, res) => {
             const email = req.params.email;
-            const query = {email : email};
+            const query = { email: email };
             const result = await postCollection.find(query).toArray();
             res.send(result);
         })
 
         //delete a post
-        app.delete('/post/:id', async(req, res)=>{
+        app.delete('/post/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id : new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await postCollection.deleteOne(query);
             res.send(result);
         })
@@ -253,17 +292,17 @@ async function run() {
             });
         })
         // Payment Data
-        app.post('/payment', async(req,res)=>{
+        app.post('/payment', async (req, res) => {
             const payment = req.body;
             const result = await paymentCollection.insertOne(payment);
-            
+
             res.send(result)
         })
 
         app.get('/payment/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
-        
+
             try {
                 const result = await paymentCollection.find(query).toArray();
                 const updateResult = await userCollection.updateOne(
@@ -271,7 +310,7 @@ async function run() {
                     { $set: { userBadge: 'Gold' } },
                     { upsert: true }
                 );
-        
+
                 res.send({
                     payments: result,
                     badgeUpdate: updateResult
@@ -281,7 +320,7 @@ async function run() {
                 res.status(500).send({ error: 'Internal server error' });
             }
         });
-        
+
 
 
 
