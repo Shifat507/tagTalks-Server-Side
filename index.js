@@ -30,7 +30,7 @@ async function run() {
     const paymentCollection = client.db("tagTalksDb").collection("payments");
 
     try {
-        // Routes
+        
 
         // Get all posts
         app.get('/post', async (req, res) => {
@@ -68,7 +68,7 @@ async function run() {
             res.send({ count });
         })
 
-        app.get('/post/:email', async(req, res)=>{
+        app.get('/recentPost/:email', async(req, res)=>{
             const email = req.params.email;
             const query = {email : email};
             const result = await postCollection.find(query).limit(3).toArray()
