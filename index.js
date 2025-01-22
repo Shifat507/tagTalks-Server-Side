@@ -29,6 +29,7 @@ async function run() {
     const userCollection = client.db("tagTalksDb").collection("users");
     const commentCollection = client.db("tagTalksDb").collection("comments");
     const paymentCollection = client.db("tagTalksDb").collection("payments");
+    const announcementCollection = client.db("tagTalksDb").collection("announcements");
 
     try {
 
@@ -361,6 +362,18 @@ async function run() {
                 res.status(500).send({ error: 'Internal server error' });
             }
         });
+
+        // announcement related API
+        app.post('/announcement', async(req, res)=>{
+            const announcement = req.body;
+            const result = await announcementCollection.insertOne(announcement);
+            res.send(result);
+        })
+
+        app.get('/announcement', async(req, res)=>{
+            const result = await announcementCollection.find().toArray();
+            res.send(result);
+        })
 
 
 
