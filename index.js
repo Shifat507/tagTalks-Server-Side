@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
@@ -41,12 +42,13 @@ async function run() {
 
         //middleware (FOR TOKEN VERIFICATION)----------->>>
         const verifyToken = (req, res, next) => {
+            
             console.log('Inside verify token :', req.headers.authorization);
             if (!req.headers.authorization) {
                 return res.status(401).send({ message: 'unauthorized access' });
             }
             const token = req.headers.authorization.split(' ')[1];
-            //verify the token
+            // //verify the token
             jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode) => {
                 if (err) {
                     return res.status(401).send({ message: 'unauthorized access' });
@@ -55,9 +57,11 @@ async function run() {
                 next();
             })
 
+            // next();
+
         }
 
-        // middleware: verify admin 
+        // middleware: verify admin after get verify token
         const verifyAdmin = async (req, res, next) => {
             const email = req.decode.email;
             const query = { email: email };
@@ -69,7 +73,6 @@ async function run() {
             next()
 
         }
-
 
         // Get all posts
         app.get('/post', async (req, res) => {
@@ -99,7 +102,6 @@ async function run() {
             const result = await postCollection.insertOne(postData);
             res.send(result);
         });
-
 
         // Database Total posts 
         app.get('/postsCount', async (req, res) => {
@@ -255,16 +257,55 @@ async function run() {
 
 
         //user related APIs
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+            console.log(req.headers);
             const result = await userCollection.find().toArray();
             res.send(result);
 
         })
+
+        app.get('/user/admin/:email', verifyToken, async(req, res)=>{
+            const email = req.params.email;
+            if(email !== req.decode.email){
+                return res.status(403).send({message: 'Forbidden Access'})
+            }
+            const query = {email : email};
+            const user = await userCollection.findOne(query);
+            let admin = false;
+            if(user){
+                admin = user.role === 'admin'
+            }
+
+            res.send({admin})
+        })
+
         app.post('/users', async (req, res) => {
             const userInfo = req.body;
-            const result = await userCollection.insertOne(userInfo);
+            const query = { email: userInfo.email };
+            const existingUser = await userCollection.findOne(query);
+            if (existingUser) {
+                console.log(existingUser);
+                return res.send({ message: 'user already exits', insertedId: null })
+            }
+            else {
+                const result = await userCollection.insertOne(userInfo);
+                res.send(result);
+            }
+        })
+
+        app.patch('/user/admin/:id', verifyToken, verifyAdmin, async(req, res)=>{
+            const id = req.params.id;
+            const filter = {_id : new ObjectId(id)};
+            const updateDoc  = {
+                $set : {
+                    role : 'admin'
+                }
+            }
+            const result = await userCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+
+
         app.get('/user/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
