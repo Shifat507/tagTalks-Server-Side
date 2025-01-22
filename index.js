@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -169,6 +170,13 @@ async function run() {
             res.send(result);
         })
 
+        // count individual comments
+        app.get('/comment/user/count/:email', async (req, res) => {
+            const { email } = req.params;
+            const count = await commentCollection.countDocuments({ email });
+            res.send({ count });
+        })
+
         // Count total comments by postId
         app.get('/comments/count/:postId', async (req, res) => {
             const { postId } = req.params;
@@ -263,6 +271,11 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result);
 
+        })
+
+        app.get('/user/count', async (req, res) => {
+            const count = await userCollection.countDocuments();
+            res.send({ count });
         })
 
         app.get('/user/admin/:email', verifyToken, async(req, res)=>{
