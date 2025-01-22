@@ -371,7 +371,7 @@ async function run() {
         })
 
         app.get('/announcement', async(req, res)=>{
-            const result = await announcementCollection.find().toArray();
+            const result = await announcementCollection.find().sort({ date: -1 }).toArray();
             res.send(result);
         })
 
