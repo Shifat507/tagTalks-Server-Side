@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
-const app = express();
 const cors = require('cors');
+const app = express();
 const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -10,7 +10,14 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:5173',
+        'https://tagtalks-a59ee.web.app',
+        // 'https://tagtalks-server-side.vercel.app'
+    ],
+    credentials: true
+}))
 app.use(express.json());
 
 // MongoDB URI
@@ -51,11 +58,11 @@ async function run() {
             }
             const token = req.headers.authorization.split(' ')[1];
             // //verify the token
-            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decode) => {
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
                 if (err) {
                     return res.status(401).send({ message: 'unauthorized access' });
                 }
-                req.decode = decode;
+                req.decode = decoded;
                 next();
             })
 
@@ -278,11 +285,11 @@ async function run() {
             res.send({ count });
         })
 
-        app.get('/user/admin/:email', verifyToken, async(req, res)=>{
+        app.get('/user/admin/:email',  async(req, res)=>{
             const email = req.params.email;
-            if(email !== req.decode.email){
-                return res.status(403).send({message: 'Forbidden Access'})
-            }
+            // if(email !== req.decoded.email){
+            //     return res.status(403).send({message: 'Forbidden Access'})
+            // }
             const query = {email : email};
             const user = await userCollection.findOne(query);
             let admin = false;
@@ -393,7 +400,7 @@ async function run() {
 
         // MongoDB connection check
         // await client.db("admin").command({ ping: 1 });
-        console.log("Connected to MongoDB successfully!");
+        // console.log("Connected to MongoDB successfully!");
     } finally {
         // Ensures the client will close when you finish/error
         // await client.close();
