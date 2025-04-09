@@ -102,6 +102,19 @@ async function run() {
             res.send(result);
         })
 
+        // Search By Title 
+        app.get('/searchPosts', async (req, res) => {
+            const search = req.query.search;
+            let query = {};
+            if (search) {
+                query = {
+                    postTitle: { $regex: search, $options: 'i' }
+                };
+            }
+            const result = await postCollection.find(query).toArray();
+            res.send(result);
+        });
+
         // Create a new post
         app.post('/post', async (req, res) => {
             const postData = req.body;
@@ -117,6 +130,8 @@ async function run() {
             const count = await postCollection.estimatedDocumentCount();
             res.send({ count });
         })
+        
+        
 
         app.get('/recentPost/:email', async (req, res) => {
             const email = req.params.email;
